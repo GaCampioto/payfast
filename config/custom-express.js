@@ -15,6 +15,7 @@ module.exports = () => {
     consign()
         .include('./routes')
         .then('persistence')
+        .then('services')
         .into(app);
 
     return app;
