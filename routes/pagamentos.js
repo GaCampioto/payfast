@@ -11,17 +11,31 @@ module.exports = function(app) {
     app.get("/pagamentos/pagamento/:id", (req, res) => {
         let id = req.params.id;
 
-        let connection = app.persistence.connectionFactory();
-        let pagamentoDao = new app.persistence.PagamentoDao(connection);
+        memcached = app.services.memcachedClient();
+        memcached.get('pagamento/' + id, (memException, memResult) => {
+            if(memException || !memResult){
+                console.log('MISS - id não encontrado no cache: ' + id);
+                let connection = app.persistence.connectionFactory();
+                let pagamentoDao = new app.persistence.PagamentoDao(connection);
 
-        pagamentoDao.getById(id, (exception, result) => {
-            if(exception){
-                console.log(exception);
-                res.status(500).json(exception);
+                pagamentoDao.getById(id, (exception, result) => {
+                    if(exception){
+                        console.log(exception);
+                        res.status(500).json(exception);
+                    }
+                    console.log('Pagamento encontrado: ' + JSON.stringify(result));
+
+                    memcached.set('pagamento/' + id, result, 600000, memSetException => {
+                        console.log('nova chave adicionada ao cache: pagamento-' + id);
+                    });
+                    res.send(result);
+                    return;
+                });
+            } else {
+                console.log('HIT - id encontrado no cache: ' + id);
+                res.json(memResult);
+                return;
             }
-            console.log('Pagamento encontrado: ' + JSON.stringify(result));
-            res.send(result);
-            return;
         });
     });
 
