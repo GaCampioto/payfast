@@ -8,6 +8,23 @@ module.exports = function(app) {
         res.send('ok');
     });
 
+    app.get("/pagamentos/pagamento/:id", (req, res) => {
+        let id = req.params.id;
+
+        let connection = app.persistence.connectionFactory();
+        let pagamentoDao = new app.persistence.PagamentoDao(connection);
+
+        pagamentoDao.getById(id, (exception, result) => {
+            if(exception){
+                console.log(exception);
+                res.status(500).json(exception);
+            }
+            console.log('Pagamento encontrado: ' + JSON.stringify(result));
+            res.send(result);
+            return;
+        });
+    });
+
     app.delete("/pagamentos/pagamento/:id", (req, res) => {
         let pagamento = {};
         let id = req.params.id;
